@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 '''
-Red de Astone 2018
+Astone Network 2018
+A 2D network is proposed to classify between signal and noise.
 
-    Se propone una red 2D para clasificar entre signal y ruido
-    
-    Input:
-
-        2D : mapas tiempo-frecuencia de 2s segundos por medio de discrete wavelet transforms
-    
+Input:
+2D: Time-frequency maps of 2 seconds using discrete wavelet transforms.
 '''
 
 
