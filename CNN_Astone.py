@@ -1,31 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
 '''
-Astone Network 2018
-A 2D network is proposed to classify between signal and noise.
+Red de Astone 2018
 
-Input:
-2D: Time-frequency maps of 2 seconds using discrete wavelet transforms.
+    Se propone una red 2D para clasificar entre signal y ruido
+    
+    Input:
+
+        2D : mapas tiempo-frecuencia de 2s segundos por medio de discrete wavelet transforms
+    
 '''
 
 
 # importing libraries
 from tensorflow.keras.utils import plot_model
-from keras.layers import Input, Conv2D, MaxPool2D, BatchNormalization, Concatenate
+from keras.layers import Input, Conv2D, MaxPool2D
 from keras.models import Model
-import keras
-from keras.models import Sequential
-from keras.layers.core import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPool2D
-from keras.optimizers import Adam, SGD
+from keras.layers.core import Dense, Dropout, Flatten
+from keras.optimizers import Adam
 
-from sklearn import preprocessing
-from sklearn.model_selection import train_test_split
 import tensorflow.compat.v2 as tf
 
 import numpy as np
 
-from utils_NN import*
+import utils_NN as ut
 
 # set the directory, distance, and batch size
 directory = 'data/2000 datafull_names'
@@ -40,7 +38,8 @@ channels = 1
 # 3 - Continuous wavelet T
 # 4 - fast Continuous WT
 # 5 - Melspectrogram
-
+# List of names corresponding to each transformation
+trns_names = ['STFT','WT_Morlet','DWT','CWT','fCWT','MELSPECTROGRAM']
 trns_indx = 0
 fmax = 2048
 
@@ -52,7 +51,7 @@ y_val = np.load(directory + '/val_labels_dist_' + dist + '.npy')
 
 
 # get the shape of the transformed data
-timeInd, levels = transform_data( [X_train_filenames[0]], trns_indx, fmax)[0].shape
+timeInd, levels = ut.transform_data( [X_train_filenames[0]], trns_indx, fmax)[0].shape
 
 
 # set the filter configuration and dropout 
@@ -75,7 +74,7 @@ for i in range(len(filters)):
     if dropout:
         CONV = Dropout(p)(CONV)
     else:
-        CONV = Soft_Dropout(a, b)(CONV)
+        CONV = ut.Soft_Dropout(a, b)(CONV)
 
 DENSE = Flatten()(CONV)
 
@@ -86,8 +85,8 @@ model_astone = Model(inputs=[inputLayer], outputs=[out], name="model_astone")
 model_astone.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy', tf.keras.metrics.FalsePositives()])
 
 # define the training and validation data generators
-my_training_batch_generator = My_Custom_Generator( X_train_filenames, y_train, batch_size=batch_size, trns_indx=trns_indx)
-my_validation_batch_generator = My_Custom_Generator(X_val_filenames, y_val, batch_size=batch_size, trns_indx=trns_indx)
+my_training_batch_generator = ut.My_Custom_Generator( X_train_filenames, y_train, batch_size=batch_size, trns_indx=trns_indx)
+my_validation_batch_generator = ut.My_Custom_Generator(X_val_filenames, y_val, batch_size=batch_size, trns_indx=trns_indx)
 
 
 #early_stopping = EarlyStoppingTresh(monitor='val_loss', threshold=0.0001)
@@ -98,13 +97,17 @@ history = model_astone.fit(my_training_batch_generator,steps_per_epoch=int( len(
                            epochs=100,
                            verbose=1)
 
+path = "redes/"+trns_names[trns_indx]+"_dist-" + dist + ' blocks-' + str(len(filters))+".h5"
+model_astone.save(path)
+
 # graph metrics
-graph_metrics(history,
-              'Melspectrogram\n Metrics dist-'
+ut.graph_metrics(history,
+              trns_names[trns_indx]
+              +'\n Metrics dist-'
               + dist
               + ' filters-'
               + str(len(filters))
               + 'val acc-'
               + str(history.history['val_accuracy'][-1]),
-              'plots/mor_'+dist+'-kpc_'+str(len(filters))+'-capas.png'
+              'plots/'+trns_names[trns_indx]+'_'+dist+'-kpc_'+str(len(filters))+'-blocks.png'
               )

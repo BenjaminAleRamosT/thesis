@@ -388,19 +388,51 @@ def transform_data(batch_x , trns_indx, fmax = 2048):
     x = [abs(trns_funct[trns_indx](
         np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax )) 
         for file_name in batch_x]
+    x = norm_data(np.array(x))
+    return x
+
+def transform_data_stft_3(batch_x , fmax = 2048):
+    """
+    Apply the STFT transformation function three times to a batch of data files at different resolutions.    
+    :param batch_x: list of file names
+    :param trns_indx: index of the transform function to apply
+    :param fmax: maximum frequency to consider
+    :return: transformed data
+    """
+    
+    # Apply the specified transform function to each file in the batch
+    x_a = [abs(pr.calcular_stft(
+        np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax, window_length = 512, num_segments = 144)) 
+        for file_name in batch_x]
+    x_a = norm_data(np.array(x_a))
+    
+    x_b = [abs(pr.calcular_stft(
+        np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax, window_length = 1024, num_segments = 144)) 
+        for file_name in batch_x]
+    x_b = norm_data(np.array(x_b))
+    
+    x_c = [abs(pr.calcular_stft(
+        np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax, window_length = 2048, num_segments = 144)) 
+        for file_name in batch_x]
+    x_c = norm_data(np.array(x_c))
+    
+    x = list((x_a,x_b,x_c))
     
     return x
+
+
 
 class My_Custom_Generator(keras.utils.Sequence):
     """
     Custom generator class for feeding data into a Keras model during training or evaluation
     """
-    def __init__(self, image_filenames, labels, batch_size = 32, trns_indx = 0,fmax = 2048):
+    def __init__(self, image_filenames, labels, batch_size = 32, trns_indx = 0,fmax = 2048, comp=False):
         self.image_filenames = image_filenames
         self.labels = labels
         self.batch_size = batch_size
         self.trns_indx = trns_indx
         self.fmax = fmax
+        self.comp = comp
 
     def __len__(self):
         return (np.ceil(len(self.image_filenames) / float(self.batch_size))).astype(np.int)
@@ -414,8 +446,9 @@ class My_Custom_Generator(keras.utils.Sequence):
         batch_x = self.image_filenames[idx * self.batch_size : (idx+1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size : (idx+1) * self.batch_size]
 
-        x = transform_data(batch_x , self.trns_indx, self.fmax)
-
-        x = norm_data(np.array(x))
-
+        if self.comp:
+            x = transform_data_stft_3(batch_x , self.fmax)
+        else:
+            x = transform_data(batch_x , self.trns_indx, self.fmax)
+    
         return x , np.array(batch_y)

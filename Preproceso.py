@@ -1,14 +1,11 @@
 import numpy as np
-import math
 import matplotlib.pyplot as plt
 
 import pywt
 import os
-from sklearn.decomposition import PCA
 from pathlib import Path
 
 import mne
-from mne.datasets import somato
 
 
 
@@ -57,7 +54,7 @@ import numpy as np
 from scipy.signal import stft
 import matplotlib.pyplot as plt
 
-def calcular_stft(data,sampling_rate = 16384 ,graph=False, fmax=8192):
+def calcular_stft(data,sampling_rate = 16384 ,graph=False, fmax=8192,  window_length = 2048, num_segments = 144, step_ratio=4):
     """
     Calculate the Short-Time Fourier Transform (STFT) of a signal.
 
@@ -79,9 +76,7 @@ def calcular_stft(data,sampling_rate = 16384 ,graph=False, fmax=8192):
     """
 
     # Define STFT parameters
-    window_length = 2048
-    window_step = window_length // 4
-    num_segments = 144
+    window_step = window_length // step_ratio
     freq_limit = fmax
     
     # Calculate STFT using the scipy.signal.stft function
