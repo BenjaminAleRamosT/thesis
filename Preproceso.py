@@ -9,7 +9,6 @@ from pathlib import Path
 
 import mne
 from mne.datasets import somato
-from mne.time_frequency import tfr_morlet
 
 
 
@@ -106,37 +105,6 @@ def calcular_stft(data,sampling_rate = 16384 ,graph=False, fmax=8192):
 
     return Zxx
 
-
-
-
-
-
-    # Define STFT parameters
-    longitud_ventana = 2048
-    salto_ventana = longitud_ventana // 4
-    num_segmentos = 144
-    freq_lim = fmax
-    
-    # Calculate STFT using the scipy.signal.stft function
-    f, t, Zxx = stft(data, fs = sampling_rate, window='hann', nperseg=longitud_ventana, noverlap=salto_ventana, nfft=longitud_ventana)
-    
-    # Slice the Zxx matrix to the maximum frequency of interest
-    f_range = (0,freq_lim) 
-    freq_slice = np.where((f >= f_range[0]) & (f <= f_range[1]))
-
-    # Keep only frequencies of interest
-    f   = f[freq_slice]
-    Zxx = Zxx[freq_slice,:][0]
-    
-    # Plot the spectrogram
-    if graph:
-        plt.pcolormesh(t, f, np.abs(Zxx),cmap='twilight', vmax=abs(Zxx).max(), vmin=-abs(Zxx).max())
-        plt.title('STFT \n freq_lim = ' + str(freq_lim) )
-        plt.xlabel('Time [s]')
-        plt.ylabel('Frequency [Hz]')
-        plt.show()
-    
-    return Zxx
 
 def wt_morlet(data,sampling_rate = 16384 ,graph=False, fmax=8192):
     """
