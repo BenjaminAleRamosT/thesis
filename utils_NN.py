@@ -301,24 +301,26 @@ def graph_metrics(history, name, filename):
     plt.close(fig1)
 
 
-def name_store(directory='data/timeFrecuency'):
+def name_store(directory='data/samples'):
     """
     Creates train and validation sets for signal and noise files and stores them in a directory
     :param directory: directory containing the signal and noise files
     """
     
     # Define a list of distances
-    dist = ['0.1', '5.05', '10']
-
+    dist = ['0.1','2.71', '5.05','7.39', '10']
+    
+    # model = ['LS220', 'GShen', 'SFHo']
+    
     # Loop through each distance value
     for i in range(len(dist)):
-        
         # Find all signal files for the current distance value
-        signal_names = glob.glob(directory+'/s11.2--LS220_'+dist[i]+'kpc_sim*.txt')
+        # signal_names = glob.glob(directory +'/s*--LS220_'+ dist[i] +'kpc_sim*.txt')
+        signal_names = glob.glob(directory +'/s*--*_'+ dist[i] +'kpc_sim*.txt')
+
         
         # Find all noise files, this could be done once
         noise_names = glob.glob(directory+'/aLIGO_noise_2sec_sim*.txt')
-
 
         # If the number of noise files is not equal to the number of signal files,
         # split the larger set to match the size of the smaller set
@@ -331,14 +333,14 @@ def name_store(directory='data/timeFrecuency'):
                     signal_names, train_size=len(noise_names))
 
         # Create arrays for the labels of the signal and noise files
-        y1 = np.zeros(len(noise_names))
-        y2 = np.ones(len(signal_names))
+        y1 = np.zeros(len(signal_names))
+        y2 = np.ones(len(noise_names))
 
         # Concatenate the arrays of signal and noise file names
         x_names = signal_names + noise_names
 
         # Convert labels to categorical format
-        y = np.hstack((y1, y2))
+        y = np.hstack((y1,y2))
         y = to_categorical(y, dtype="uint8")
 
         # Shuffle the file names and labels
@@ -347,11 +349,11 @@ def name_store(directory='data/timeFrecuency'):
         # Create a new directory to store the file names and labels
         outdir = directory + '_names'
         os.makedirs(outdir, exist_ok=True)
-
+        
         # Split the shuffled file names and labels into training and validation sets
         X_train_filenames, X_val_filenames, y_train, y_val = train_test_split(x_shuffled, y_shuffled, test_size=0.3, random_state=1)
 
-
+        
         # Save the training set file names and labels to disk
         name_x_t = outdir + '/train_list_dist_' + dist[i] + '.npy'
         np.save(name_x_t, X_train_filenames)
@@ -366,7 +368,7 @@ def name_store(directory='data/timeFrecuency'):
         name_y_v = outdir + '/val_labels_dist_' + dist[i] + '.npy'
         np.save(name_y_v, y_val)
 
-
+# name_store()
 def transform_data(batch_x , trns_indx, fmax = 2048):
     """
     Apply a specified transform function to a batch of data files
@@ -385,13 +387,31 @@ def transform_data(batch_x , trns_indx, fmax = 2048):
                   pr.mel]
     
     # Apply the specified transform function to each file in the batch
-    x = [abs(trns_funct[trns_indx](
-        np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax )) 
-        for file_name in batch_x]
+    
+    x_transform = [np.loadtxt(
+        fname = str(file_name), delimiter=' ', usecols=1)
+         for file_name in batch_x]
+    
+    x = [
+        abs(trns_funct[trns_indx](
+            t,
+            graph = False, 
+            fmax = fmax )
+            ) 
+        if  t.shape == (16384,) 
+        else 
+        abs(trns_funct[trns_indx](
+            t[::2],
+            graph = False, 
+            fmax = fmax )
+            ) 
+        
+        for t in x_transform]
+        
     x = norm_data(np.array(x))
     return x
 
-def transform_data_stft_3(batch_x , fmax = 2048):
+def transform_data_stft_3(batch_x , fmax = 2048, trns_indx = 0):
     """
     Apply the STFT transformation function three times to a batch of data files at different resolutions.    
     :param batch_x: list of file names
@@ -400,23 +420,48 @@ def transform_data_stft_3(batch_x , fmax = 2048):
     :return: transformed data
     """
     
+    x_transform = [np.loadtxt(
+        fname = str(file_name), delimiter=' ', usecols=1)
+         for file_name in batch_x]
+    
+    
+    
+    
+    trns_funct = [pr.calcular_stft,
+                  pr.mel]
+    
+    windL = [512, 1024, 2048]
+    
+    n_fft = [512, 1024, 2048]
+    hop_length = [32, 64, 256]
+    n_mels = [20, 40, 60]
+    
+    x= []
     # Apply the specified transform function to each file in the batch
-    x_a = [abs(pr.calcular_stft(
-        np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax, window_length = 512, num_segments = 144)) 
-        for file_name in batch_x]
-    x_a = norm_data(np.array(x_a))
+    if trns_indx == 0:
+        for i in range(len(windL)):
+            x_a = [abs(trns_funct[trns_indx](
+                t ,graph = False, fmax = fmax, window_length = windL[i]))
+                if  t.shape == (16384,) 
+                else
+                abs(trns_funct[trns_indx](
+                    t[::2] ,graph = False, fmax = fmax, window_length = windL[i]))
+                for t in x_transform]
+            x_a = norm_data(np.array(x_a))
+            x.append(x_a)
+    else :
+        for i in range(len(n_fft)):
+            x_a = [abs(trns_funct[trns_indx](
+                t ,graph = False, fmax = fmax,n_fft = n_fft[i], hop_length = hop_length[i], n_mels = n_mels[i]))
+                if  t.shape == (16384,) 
+                else
+                abs(trns_funct[trns_indx](
+                    t[::2] ,graph = False, fmax = fmax,n_fft = n_fft[i], hop_length = hop_length[i], n_mels = n_mels[i]))
+                for t in x_transform]
+            x_a = norm_data(np.array(x_a))
+        
+            x.append(x_a)
     
-    x_b = [abs(pr.calcular_stft(
-        np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax, window_length = 1024, num_segments = 144)) 
-        for file_name in batch_x]
-    x_b = norm_data(np.array(x_b))
-    
-    x_c = [abs(pr.calcular_stft(
-        np.loadtxt(fname = str(file_name), delimiter=' ', usecols=1) ,graph = False, fmax = fmax, window_length = 2048, num_segments = 144)) 
-        for file_name in batch_x]
-    x_c = norm_data(np.array(x_c))
-    
-    x = list((x_a,x_b,x_c))
     
     return x
 
@@ -452,3 +497,5 @@ class My_Custom_Generator(keras.utils.Sequence):
             x = transform_data(batch_x , self.trns_indx, self.fmax)
     
         return x , np.array(batch_y)
+
+

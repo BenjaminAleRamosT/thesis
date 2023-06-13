@@ -13,7 +13,9 @@ Red de Astone 2018
 
 
 # importing libraries
+
 from tensorflow.keras.utils import plot_model
+import keras
 from keras.layers import Input, Conv2D, MaxPool2D
 from keras.models import Model
 from keras.layers.core import Dense, Dropout, Flatten
@@ -28,7 +30,7 @@ import utils_NN as ut
 # set the directory, distance, and batch size
 directory = 'data/samples_names'
 dist = '10'
-batch_size = 32
+batch_size = 16
 channels = 1
 
 # choose the transform to use trns_indx
@@ -40,7 +42,7 @@ channels = 1
 # 5 - Melspectrogram
 # List of names corresponding to each transformation
 trns_names = ['STFT','WT_Morlet','DWT','CWT','fCWT','MELSPECTROGRAM']
-trns_indx = 0
+trns_indx = 4
 fmax = 2048
 
 # load the training and validation paths of data
@@ -53,9 +55,10 @@ y_val = np.load(directory + '/val_labels_dist_' + dist + '.npy')
 # get the shape of the transformed data
 timeInd, levels = ut.transform_data( [X_train_filenames[0]], trns_indx, fmax)[0].shape
 
-
+print(timeInd, levels )
 # set the filter configuration and dropout 
-filters = [8, 8, 8, 8]
+filters = [8, 8, 8, 8, 8, 8, 8]
+filters_1d = [8]
 dropout = 1  # 0 = soft-dropout, 1 = dropout
 p = 0.3
 a, b = 2, 5
@@ -74,6 +77,16 @@ for i in range(len(filters)):
         CONV = Dropout(p)(CONV)
     else:
         CONV = ut.Soft_Dropout(a, b)(CONV)
+        
+for i in range(len(filters_1d)):
+
+    CONV = Conv2D(filters=filters_1d[i], kernel_size=(1, 3), padding='same', activation='relu')(CONV)
+    CONV = MaxPool2D(pool_size=(1, 2), strides=2)(CONV)
+
+    if dropout:
+        CONV = Dropout(p)(CONV)
+    else:
+        CONV = ut.Soft_Dropout(a, b)(CONV)
 
 DENSE = Flatten()(CONV)
 
@@ -83,6 +96,8 @@ out = Dense(units=2, activation='softmax')(DENSE)
 model_astone = Model(inputs=[inputLayer], outputs=[out], name="model_astone")
 model_astone.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy', tf.keras.metrics.FalsePositives()])
 
+keras.utils.plot_model(model_astone, show_shapes=True)
+model_astone.summary()
 # define the training and validation data generators
 my_training_batch_generator = ut.My_Custom_Generator( X_train_filenames, y_train, batch_size=batch_size, trns_indx=trns_indx)
 my_validation_batch_generator = ut.My_Custom_Generator(X_val_filenames, y_val, batch_size=batch_size, trns_indx=trns_indx)
@@ -96,7 +111,7 @@ history = model_astone.fit(my_training_batch_generator,steps_per_epoch=int( len(
                            epochs=100,
                            verbose=1)
 
-path = "redes/"+trns_names[trns_indx]+"_dist-" + dist + ' blocks-' + str(len(filters))+".h5"
+path = "redes/"+trns_names[trns_indx]+"_dist-" + dist + ".h5"
 model_astone.save(path)
 
 # graph metrics
@@ -108,5 +123,5 @@ ut.graph_metrics(history,
               + str(len(filters))
               + 'val acc-'
               + str(history.history['val_accuracy'][-1]),
-              'plots/'+trns_names[trns_indx]+'_'+dist+'-kpc_'+str(len(filters))+'-blocks.png'
+              'plots/'+trns_names[trns_indx]+'_'+dist+'-kpc.png'
               )
