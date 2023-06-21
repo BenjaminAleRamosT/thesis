@@ -490,31 +490,31 @@ def main():
     # calcular_cwt(data,graph=True,fmax=2048)
     # e = ewt(data,graph = True)[:,3]
     
-    h = Hilbert_Huang(data,graph = True).numpy()
-    h1 = Hilbert_Huang(data1,graph = True).numpy()
-    h2 = Hilbert_Huang(data2,graph = True).numpy()
-    h3 = Hilbert_Huang(data3,graph = True).numpy()
+    # h = Hilbert_Huang(data,graph = True).numpy()
+    # h1 = Hilbert_Huang(data1,graph = True).numpy()
+    # h2 = Hilbert_Huang(data2,graph = True).numpy()
+    # h3 = Hilbert_Huang(data3,graph = True).numpy()
     
-    mel(data,graph=True)
-    mel(data1,graph=True)
-    mel(data2,graph=True)
-    mel(data3,graph=True)
+    # mel(data,graph=True)
+    # mel(data1,graph=True)
+    # mel(data2,graph=True)
+    # mel(data3,graph=True)
      
-    mel(h[0],graph=True)
-    mel(h[1],graph=True)
-    mel(h[2],graph=True)
+    # mel(h[0],graph=True)
+    # mel(h[1],graph=True)
+    # mel(h[2],graph=True)
     
-    mel(h1[0],graph=True)
-    mel(h1[1],graph=True)
-    mel(h1[2],graph=True)
+    # mel(h1[0],graph=True)
+    # mel(h1[1],graph=True)
+    # mel(h1[2],graph=True)
     
-    mel(h2[0],graph=True)
-    mel(h2[1],graph=True)
-    mel(h2[2],graph=True)
+    # mel(h2[0],graph=True)
+    # mel(h2[1],graph=True)
+    # mel(h2[2],graph=True)
     
-    mel(h3[0],graph=True)
-    mel(h3[1],graph=True)
-    mel(h3[2],graph=True)
+    # mel(h3[0],graph=True)
+    # mel(h3[1],graph=True)
+    # mel(h3[2],graph=True)
     
     # print(Hilbert_Huang(data).shape)
     # here's the use of the function

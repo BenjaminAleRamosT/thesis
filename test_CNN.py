@@ -72,7 +72,7 @@ def main():
     # 5 - Melspectrogram
     # List of names corresponding to each transformation
     redes_names = ['STFT','WT_Morlet','DWT','','','MELSPECTROGRAM',
-                   'PROPOSAL V1','PROPOSAL V2','PROPOSAL V3']
+                   'PROPOSAL V1','PROPOSAL V2','PROPOSAL V3','PROPOSAL V4','PROPOSAL V5']
     redes = [
              '16k/redes/STFT_dist-10 blocks-4.h5',
              '16k/redes/WT_Morlet_dist-10 blocks-6.h5',
@@ -82,16 +82,21 @@ def main():
              '16k/redes/MELSPECTROGRAM_dist-10 blocks-5.h5',
              '16k/redes/proposal_dist-10.h5',
              '16k/redes/proposal2_dist-10.h5',
-             '16k/redes/proposal3_dist-10.h5'
+             '16k/redes/proposal3_dist-10.h5',
+             'redes/proposal4_dist-10.h5',
+             'redes/proposal5_dist-10.h5'
              ]
     
-    i = 4 #change this to change model to test
+    i = 10 #change this to change model to test
     
     comp=False
     
     if i > 5:
         comp=True
         trns_indx = 0
+        if i >= 9:
+            trns_indx = 5
+            
     else:
         trns_indx = i
     
@@ -117,7 +122,7 @@ def main():
     predictions = new_model.predict(my_validation_batch_generator)
    
     cm, Fsc, Pr, Re, Ef, FAR = metricas(y_val, predictions)
-    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm, display_labels = [False, True])
+    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm, display_labels = [True,False])
     cm_display.plot(cmap='Blues', values_format='')
     cm_display.ax_.set_title(redes_names[i])
     plt.show()  

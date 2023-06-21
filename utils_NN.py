@@ -409,6 +409,7 @@ def transform_data(batch_x , trns_indx, fmax = 2048):
         for t in x_transform]
         
     x = norm_data(np.array(x))
+    # [print(x_.shape) for x_ in x]
     return x
 
 def transform_data_stft_3(batch_x , fmax = 2048, trns_indx = 0):
@@ -434,7 +435,7 @@ def transform_data_stft_3(batch_x , fmax = 2048, trns_indx = 0):
     
     n_fft = [512, 1024, 2048]
     hop_length = [32, 64, 256]
-    n_mels = [20, 40, 60]
+    n_mels = [20, 40, 160]
     
     x= []
     # Apply the specified transform function to each file in the batch
@@ -451,17 +452,17 @@ def transform_data_stft_3(batch_x , fmax = 2048, trns_indx = 0):
             x.append(x_a)
     else :
         for i in range(len(n_fft)):
-            x_a = [abs(trns_funct[trns_indx](
+            x_a = [abs(trns_funct[1](
                 t ,graph = False, fmax = fmax,n_fft = n_fft[i], hop_length = hop_length[i], n_mels = n_mels[i]))
                 if  t.shape == (16384,) 
                 else
-                abs(trns_funct[trns_indx](
+                abs(trns_funct[1](
                     t[::2] ,graph = False, fmax = fmax,n_fft = n_fft[i], hop_length = hop_length[i], n_mels = n_mels[i]))
                 for t in x_transform]
             x_a = norm_data(np.array(x_a))
         
             x.append(x_a)
-    
+    # [print(x_.shape) for x_ in x]
     
     return x
 
@@ -492,7 +493,7 @@ class My_Custom_Generator(keras.utils.Sequence):
         batch_y = self.labels[idx * self.batch_size : (idx+1) * self.batch_size]
 
         if self.comp:
-            x = transform_data_stft_3(batch_x , self.fmax)
+            x = transform_data_stft_3(batch_x , self.fmax, self.trns_indx)
         else:
             x = transform_data(batch_x , self.trns_indx, self.fmax)
     
