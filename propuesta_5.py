@@ -7,7 +7,7 @@ Created on Tue Apr 25 02:36:13 2023
 
 # importing libraries
 from tensorflow.keras.utils import plot_model
-from keras.layers import Input, Conv2D, MaxPool2D, Concatenate
+from keras.layers import Input, Conv2D, MaxPool2D, Concatenate,Conv1D
 from keras.models import Model
 import keras
 from keras.layers.core import Dense, Dropout, Flatten
@@ -18,13 +18,13 @@ import numpy as np
 
 import utils_NN as ut
 
-    
-def main(directory = 'data/samples_names',
-    dist = '10'):
+
+def main():
     # set the directory, distance, and batch size
     # directory = '/media/guillermo/Swap/Data Supernovae/samples_names'
-    
-    trns_indx = 0 
+    directory = 'data/samples_names'
+    dist = '10'
+    trns_indx = 1 
     batch_size = 32
     channels = 1
     
@@ -45,11 +45,14 @@ def main(directory = 'data/samples_names',
     timeInd_b, levels_b = ut.transform_data_stft_3( [X_train_filenames[0]], fmax, trns_indx = trns_indx)[1][0].shape
     timeInd_c, levels_c = ut.transform_data_stft_3( [X_train_filenames[0]], fmax, trns_indx = trns_indx)[2][0].shape
     
+    # print(timeInd_a, levels_a,
+    #       timeInd_b, levels_b,
+    #       timeInd_c, levels_c)
     
     # set the filter configuration and dropout 
-    filters_a = [8, 8, 8, 8, 8]
-    filters_b = [8, 8, 8, 8]
-    filters_c = [8, 8, 8]
+    filters_a = [8, 16,16, 32]
+    filters_b = [8, 8, 16, 16, 32]
+    filters_c = [8, 8, 16, 32, 64]
     dropout = 1  # 0 = soft-dropout, 1 = dropout
     p = 0.3
     a, b = 2, 5
@@ -76,7 +79,21 @@ def main(directory = 'data/samples_names',
             CONV_a = Dropout(p)(CONV_a)
         else:
             CONV_a = ut.Soft_Dropout(a, b)(CONV_a)
+            
+    CONV_a = Conv1D(filters=8, kernel_size=(3), padding='same', activation='relu')(CONV_a)
+    CONV_a = MaxPool2D(pool_size=(1, 2), strides=2)(CONV_a)
     
+    if dropout:
+        CONV_a = Dropout(p)(CONV_a)
+    else:
+        CONV_a = ut.Soft_Dropout(a, b)(CONV_a)
+        
+    CONV_a = Conv1D(filters=64, kernel_size=(3), padding='same', activation='relu')(CONV_a)
+    CONV_a = MaxPool2D(pool_size=(1, 2), strides=2)(CONV_a)
+    if dropout:
+        CONV_a = Dropout(p)(CONV_a)
+    else:
+        CONV_a = ut.Soft_Dropout(a, b)(CONV_a)
     DENSE_a = Flatten()(CONV_a)
     
     # add convolutional layers with max pooling and dropout (or soft dropout) to the model second line
@@ -91,6 +108,12 @@ def main(directory = 'data/samples_names',
         else:
             CONV_b = ut.Soft_Dropout(a, b)(CONV_b)
     
+    CONV_b = Conv1D(filters=64, kernel_size=(3), padding='same', activation='relu')(CONV_b)
+    CONV_b = MaxPool2D(pool_size=(1, 2), strides=2)(CONV_b)
+    if dropout:
+        CONV_b = Dropout(p)(CONV_b)
+    else:
+        CONV_b = ut.Soft_Dropout(a, b)(CONV_b)
     DENSE_b = Flatten()(CONV_b)
     
     # add convolutional layers with max pooling and dropout (or soft dropout) to the model third line
@@ -122,24 +145,23 @@ def main(directory = 'data/samples_names',
     
     # add dense layer with 64 units and dropout layer
     DENSE = Dense(units= 64)(DENSE)
-    DENSE = Dropout(p)(DENSE)
     
     
     # add output layer with softmax activation
     out = Dense(units=2, activation='softmax')(DENSE)
        
-    #define model
+    # define model
     model_pps = Model(inputs=inputs,outputs=[out], name = "model_pps")
     
     
        
     model_pps.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy',tf.keras.metrics.FalsePositives()])
-    # model_pps.summary()
+    model_pps.summary()
     # keras.utils.plot_model(model_pps, show_shapes=True)
     
     # define the training and validation data generators
-    my_training_batch_generator = ut.My_Custom_Generator( X_train_filenames, y_train, batch_size=batch_size, comp=True)
-    my_validation_batch_generator = ut.My_Custom_Generator(X_val_filenames, y_val, batch_size=batch_size, comp=True)
+    my_training_batch_generator = ut.My_Custom_Generator( X_train_filenames, y_train, batch_size=batch_size, comp=True,trns_indx=trns_indx)
+    my_validation_batch_generator = ut.My_Custom_Generator(X_val_filenames, y_val, batch_size=batch_size, comp=True,trns_indx=trns_indx)
     
     
     history = model_pps.fit(my_training_batch_generator,steps_per_epoch=int( len(X_train_filenames) // batch_size),
@@ -148,7 +170,7 @@ def main(directory = 'data/samples_names',
                                epochs=100,
                                verbose=1)
     
-    path = "redes/proposal_dist-" + dist + ".h5"
+    path = "redes/proposal5_dist-" + dist + ".h5"
     model_pps.save(path)
     
     # graph metrics
@@ -157,5 +179,8 @@ def main(directory = 'data/samples_names',
                   + dist
                   + 'val acc-'
                   + str(history.history['val_accuracy'][-1]),
-                  'plots/proposal_'+dist+'-kpc.png'
+                  'plots/proposal5_'+dist+'-kpc.png'
                   )
+    
+if __name__ == "__main__":
+    main()

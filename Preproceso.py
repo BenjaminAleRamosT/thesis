@@ -473,9 +473,9 @@ def prepro_dir(directory, outdir, trns_indx=0, graph=False, white=False, pad=0, 
 
 def main():
     f = 'data/samples/aLIGO_noise_2sec_sim27.txt'
-    f1 = 'data/samples/s15.0--GShen_10kpc_sim32.txt'
-    f2 = 'data/samples/s20.0--SFHo_10kpc_sim73.txt'
-    f3 = 'data/samples/s11.2--LS220_10kpc_sim83.txt'
+    f1 = 'data/samples/s15.0--GShen_7.39kpc_sim32.txt'
+    f2 = 'data/samples/s20.0--SFHo_7.39kpc_sim73.txt'
+    f3 = 'data/samples/s11.2--LS220_7.39kpc_sim83.txt'
     data = np.loadtxt(f, delimiter=" ")[:, 1]
     data1 = np.loadtxt(f1, delimiter=" ")[:, 1]
     data2 = np.loadtxt(f2, delimiter=" ")[:, 1]
@@ -485,7 +485,9 @@ def main():
 
     # calcular_stft(data,graph=True,fmax=2048)
     # dwt_pywt(data,graph=True,fmax=2048)
-    # mel(data,graph=True,fmax=2048)
+    mel(data1,graph=True)
+    mel(data2,graph=True)
+    mel(data3,graph=True)
     # wt_morlet(data,graph=True,fmax=2048)
     # calcular_cwt(data,graph=True,fmax=2048)
     # e = ewt(data,graph = True)[:,3]

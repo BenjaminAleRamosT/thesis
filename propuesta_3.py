@@ -155,7 +155,7 @@ model_pps3 = Model(inputs=inputs,outputs=[out], name = "model_pps3")
 
    
 model_pps3.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy',tf.keras.metrics.FalsePositives()])
-model_pps3.summary()
+# model_pps3.summary()
 #keras.utils.plot_model(model_pps3, show_shapes=True)
 
 # define the training and validation data generators

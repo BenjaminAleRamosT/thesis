@@ -8,6 +8,7 @@ Created on Sun Jun 18 14:17:39 2023
 import CNN_Astone as ast
 import CNN_AstonefCwt as astfcwt
 import numpy as np
+from tqdm import tqdm
 
 def main(trns_indx = 0):
     
@@ -22,14 +23,14 @@ def main(trns_indx = 0):
     dist = ['0.1','2.71', '5.05','7.39', '10']
     
     for dist_ in dist:
-        for trns_indx in [0,1,2,5]:
+        for trns_indx in tqdm([0]):
             print(trns_indx)
             if trns_indx == 4:
                     
                 astfcwt.main()
             
             else:
-                n = [4,6,3,5]
+                n = [4,6,5]
                 
                 filters = np.ones(n[trns_indx])*8
                 

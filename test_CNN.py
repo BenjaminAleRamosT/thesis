@@ -3,7 +3,7 @@ from tensorflow import keras
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import metrics
-
+import matplotlib.pyplot as plt
 import utils_NN as ut
 
 def metricas(y, z):
@@ -58,9 +58,6 @@ def confusion_matrix(y, z):
     return cm 
 
 
-
-
-
 def main():
     
     # choose the transform to use trns_indx
@@ -73,21 +70,21 @@ def main():
     # List of names corresponding to each transformation
     redes_names = ['STFT','WT_Morlet','DWT','','','MELSPECTROGRAM',
                    'PROPOSAL V1','PROPOSAL V2','PROPOSAL V3','PROPOSAL V4','PROPOSAL V5']
-    redes = [
-             '16k/redes/STFT_dist-10 blocks-4.h5',
-             '16k/redes/WT_Morlet_dist-10 blocks-6.h5',
-             '16k/redes/DWT_dist-10 blocks-3.h5',
-             '',
-             'redes/fCWT_dist-10.h5',
-             '16k/redes/MELSPECTROGRAM_dist-10 blocks-5.h5',
-             '16k/redes/proposal_dist-10.h5',
-             '16k/redes/proposal2_dist-10.h5',
-             '16k/redes/proposal3_dist-10.h5',
-             'redes/proposal4_dist-10.h5',
-             'redes/proposal5_dist-10.h5'
+    dist = [
+             '0.1',
+             '2.71',
+             '5.05',
+             '7.39',
+             '10'
              ]
+    dist_ = [   0.1,
+                2.71,
+                5.05,
+                7.39,
+                10
+    ]
     
-    i = 10 #change this to change model to test
+    i = 9 #change this to change model to test
     
     comp=False
     
@@ -95,44 +92,68 @@ def main():
         comp=True
         trns_indx = 0
         if i >= 9:
-            trns_indx = 5
-            
+            trns_indx = 0
     else:
         trns_indx = i
+    F = []
+    E = []
+    FA= []
+    for j in dist:
+        print('test dist: ',j)
+        
+        new_model = keras.models.load_model('redes/last/proposal_dist-'+j+'.h5')
+        
+        X_val_filenames = np.load('data/samples_names/val_list_dist_'+'10'+'.npy')
+        y_val = np.load('data/samples_names/val_labels_dist_'+'10'+'.npy')
+        
+        batch_size = 32
+        
+        my_validation_batch_generator = ut.My_Custom_Generator(X_val_filenames, y_val, 
+                                                               batch_size, 
+                                                               trns_indx=trns_indx,
+                                                               comp = comp)
+        
+        # Evaluate the model on the test data using `evaluate`
+        # print("Evaluate on test data")
+        # results = new_model.evaluate(my_validation_batch_generator)
+        # print("test loss, test acc, False positive:", results)
+        
+        #generate predictions
+        print("Generate predictions")
+        predictions = new_model.predict(my_validation_batch_generator)
+       
+        cm, Fsc, Pr, Re, Ef, FAR = metricas(y_val, predictions)
+        # cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm, display_labels = [False,True])
+        # cm_display.plot(cmap='Blues', values_format='')
+        # cm_display.ax_.set_title(redes_names[j])
+        plt.show()  
+        
+        print('Fscores: ', Fsc)
+        print('Precision: ', Pr)
+        print('Recall: ', Re)
+        print('Efficiency: ', Ef )
+        print('FAR: ', FAR,'\n')
+        
     
-    new_model = keras.models.load_model(redes[i])
+        F.append(Fsc)
+        E.append(Ef)
+        FA.append(FAR)
+        
+    plt.plot(dist_,F, color='magenta', marker='o',mfc='pink' )
+    plt.ylabel('Fscores') #set the label for y axis
+    plt.xlabel('Dist')
+    plt.show()
     
-    X_val_filenames = np.load('data/samples_names/val_list_dist_10.npy')
-    y_val = np.load('data/samples_names/val_labels_dist_10.npy')
+    plt.plot(dist_,E, color='magenta', marker='o',mfc='pink' )
+    plt.ylabel('Efficiency') #set the label for y axis
+    plt.xlabel('Dist')
+    plt.show()
     
-    batch_size = 32
-    
-    my_validation_batch_generator = ut.My_Custom_Generator(X_val_filenames, y_val, 
-                                                           batch_size, 
-                                                           trns_indx=trns_indx,
-                                                           comp = comp)
-    
-    # Evaluate the model on the test data using `evaluate`
-    # print("Evaluate on test data")
-    # results = new_model.evaluate(my_validation_batch_generator)
-    # print("test loss, test acc, False positive:", results)
-    
-    #generate predictions
-    print("Generate predictions")
-    predictions = new_model.predict(my_validation_batch_generator)
-   
-    cm, Fsc, Pr, Re, Ef, FAR = metricas(y_val, predictions)
-    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm, display_labels = [True,False])
-    cm_display.plot(cmap='Blues', values_format='')
-    cm_display.ax_.set_title(redes_names[i])
-    plt.show()  
-    
-    print('Fscores: ', Fsc)
-    print('Precision: ', Pr)
-    print('Recall: ', Re)
-    print('Efficiency: ', Ef )
-    print('FAR: ', FAR)
-    
+    plt.plot(dist_,FA, color='magenta', marker='o',mfc='pink' )
+    plt.ylabel('FAR') #set the label for y axis
+    plt.xlabel('Dist')
+    plt.show()
+        
 if __name__ == '__main__':   
 	 main()
 

@@ -368,7 +368,7 @@ def name_store(directory='data/samples'):
         name_y_v = outdir + '/val_labels_dist_' + dist[i] + '.npy'
         np.save(name_y_v, y_val)
 
-# name_store()
+#name_store()
 def transform_data(batch_x , trns_indx, fmax = 2048):
     """
     Apply a specified transform function to a batch of data files
