@@ -5,12 +5,14 @@ import matplotlib.pyplot as plt
 from sklearn import metrics
 import matplotlib.pyplot as plt
 import utils_NN as ut
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
 
 def metricas(y, z):
 
     #z = np.asarray(z).squeeze()
     
-    cm = confusion_matrix(y, z)
+    cm = confusion_matrix_(y, z)
     
     TP = cm[0,0]
     FP = cm[0,1]
@@ -30,7 +32,7 @@ def metricas(y, z):
 
 # Confusion matrix
 
-def confusion_matrix(y, z):
+def confusion_matrix_(y, z):
     
     m = y.shape[0]
     c = y.shape[1]
@@ -39,22 +41,10 @@ def confusion_matrix(y, z):
     
     z = np.argmax(z, axis=1)
    
-    cm = np.zeros((c,c))
-    
-    for i in range(m):
-         cm[z[i] ,y[i]] += 1
-    
-    #cm = np.flip(cm)
-      
-    
-    # cm_m = np.zeros((cm.shape[0], 2, 2)) #confusion matrix per class
 
-    # for i in range(cm.shape[0]):
-    #     cm_m[i,0,0] = cm[i,i] #TP
-    #     cm_m[i,0,1] = np.sum(np.delete(cm[i,:], i, axis=0)) #FP
-    #     cm_m[i,1,0] = np.sum(np.delete(cm[:,i], i, axis=0)) #FN
-    #     cm_m[i,1,1] = np.sum(np.delete(np.delete(cm, i, axis=1),i , axis=0 )) #TN
-    
+    cm = confusion_matrix(y, z)
+    ConfusionMatrixDisplay.from_predictions(y, z, normalize='true')
+    plt.show()
     return cm 
 
 
@@ -77,38 +67,30 @@ def main():
              '7.39',
              '10'
              ]
-    dist_ = [   0.1,
+    dist__ = [   0.1,
                 2.71,
                 5.05,
                 7.39,
                 10
     ]
     
-    i = 9 #change this to change model to test
-    
-    comp=False
-    
-    if i > 5:
-        comp=True
-        trns_indx = 0
-        if i >= 9:
-            trns_indx = 0
-    else:
-        trns_indx = i
+    comp = True
+    trns_indx = 0
     F = []
     E = []
     FA= []
-    for j in dist:
-        print('test dist: ',j)
+    
+    new_model = keras.models.load_model('redes/proposal_alldist.h5')
+    
+    for dist_ in dist:
+        print('test dist: ',dist_)
         
-        new_model = keras.models.load_model('redes/last/proposal_dist-'+j+'.h5')
-        
-        X_val_filenames = np.load('data/samples_names/val_list_dist_'+'10'+'.npy')
-        y_val = np.load('data/samples_names/val_labels_dist_'+'10'+'.npy')
+        X_test_filenames = np.load('data/samples_names/test_list_dist_'+dist_+'.npy')
+        y_test = np.load('data/samples_names/test_labels_dist_'+dist_+'.npy')
         
         batch_size = 32
         
-        my_validation_batch_generator = ut.My_Custom_Generator(X_val_filenames, y_val, 
+        my_test_batch_generator = ut.My_Custom_Generator(X_test_filenames, y_test, 
                                                                batch_size, 
                                                                trns_indx=trns_indx,
                                                                comp = comp)
@@ -120,12 +102,9 @@ def main():
         
         #generate predictions
         print("Generate predictions")
-        predictions = new_model.predict(my_validation_batch_generator)
-       
-        cm, Fsc, Pr, Re, Ef, FAR = metricas(y_val, predictions)
-        # cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = cm, display_labels = [False,True])
-        # cm_display.plot(cmap='Blues', values_format='')
-        # cm_display.ax_.set_title(redes_names[j])
+        predictions = new_model.predict(my_test_batch_generator)
+        
+        cm, Fsc, Pr, Re, Ef, FAR = metricas(y_test, predictions)
         plt.show()  
         
         print('Fscores: ', Fsc)
@@ -139,17 +118,17 @@ def main():
         E.append(Ef)
         FA.append(FAR)
         
-    plt.plot(dist_,F, color='magenta', marker='o',mfc='pink' )
+    plt.plot(dist__,F, color='magenta', marker='o',mfc='pink' )
     plt.ylabel('Fscores') #set the label for y axis
     plt.xlabel('Dist')
     plt.show()
     
-    plt.plot(dist_,E, color='magenta', marker='o',mfc='pink' )
+    plt.plot(dist__,E, color='magenta', marker='o',mfc='pink' )
     plt.ylabel('Efficiency') #set the label for y axis
     plt.xlabel('Dist')
     plt.show()
     
-    plt.plot(dist_,FA, color='magenta', marker='o',mfc='pink' )
+    plt.plot(dist__,FA, color='magenta', marker='o',mfc='pink' )
     plt.ylabel('FAR') #set the label for y axis
     plt.xlabel('Dist')
     plt.show()

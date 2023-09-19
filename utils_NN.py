@@ -300,10 +300,120 @@ def graph_metrics(history, name, filename):
     fig1.savefig(filename)
     plt.close(fig1)
 
+ 
 
-def name_store(directory='data/samples'):
+def add1SegNoise(signal_path, noise_path):
+    #para simulaciones de 1seg
+    
+    signal = np.loadtxt(signal_path, delimiter=" ")
+    noise = np.loadtxt(noise_path, delimiter=" ")
+    
+    data = np.concatenate([signal , noise[:16384]])
+    
+    return data
+
+
+def search1Seg(directory='data/samples'):
+    
+    noise_names = glob.glob(directory+'/aLIGO_noise_2sec_sim*.txt')
+    models = ['GShen', 'SFHo']
+    for model in models:
+        signal_names = glob.glob(directory +'/s*--'+model+'_'+ '*' +'kpc_sim*.txt')
+        
+        for i in range(len(signal_names)):
+            data = add1SegNoise(signal_names[i] , noise_names[i])
+            
+            filename, file_extension = os.path.splitext(signal_names[i])
+            np.savetxt(filename+'_2seg'+'.txt', data , delimiter=' ')
+
+def name_noise(directory='data/samples'):
+
+    noise_names = glob.glob(directory+'/aLIGO_noise_2sec_sim*.txt')
+
+    print('noise found ',len(noise_names))
+    y = np.ones(len(noise_names))
+    y = to_categorical(y, dtype="uint8")
+    
+    outdir = directory + '_names'
+    os.makedirs(outdir, exist_ok=True)
+    
+    name_x_v = outdir + '/val_list_noise.npy'
+    np.save(name_x_v, noise_names)
+    
+    name_y_v = outdir + '/val_labels_noise.npy'
+    np.save(name_y_v, y)
+    
+    
+def train_val_set(directory='/home/desktop-20223/Escritorio/Lucas/simulaciones/SimGW'):
     """
     Creates train and validation sets for signal and noise files and stores them in a directory
+    :param directory: directory containing the signal and noise files
+    """
+    
+    # Find all signal files for the current distance value
+    # signal_names = glob.glob(directory +'/s*--LS220_'+ dist[i] +'kpc_sim*.txt')
+    signal_names1 = glob.glob(directory +'/s*--LS220_'+ '*' +'kpc_sim*.txt')
+    signal_names2 = glob.glob(directory +'/s*--GShen_'+ '*' +'kpc_sim*_2seg.txt')
+    signal_names3 = glob.glob(directory +'/s*--SFHo_'+ '*' +'kpc_sim*_2seg.txt')
+    signal_names = signal_names1 + signal_names2 + signal_names3
+    
+    # Find all noise files, this could be done once
+    noise_names = glob.glob(directory+'/aLIGO_noise_2sec_sim*.txt')
+
+    print('signals found ',len(signal_names))
+    print('noise found ',len(noise_names))
+
+
+    # If the number of noise files is not equal to the number of signal files,
+    # split the larger set to match the size of the smaller set
+    if len(noise_names) != len(signal_names):
+        if len(noise_names) > len(signal_names):
+            noise_names, n = train_test_split(
+                noise_names, train_size=len(signal_names))
+        else:
+            signal_names, n = train_test_split(
+                signal_names, train_size=len(noise_names))
+
+    # Create arrays for the labels of the signal and noise files
+    y1 = np.zeros(len(signal_names))
+    y2 = np.ones(len(noise_names))
+
+    # Concatenate the arrays of signal and noise file names
+    x_names = signal_names + noise_names
+
+    # Convert labels to categorical format
+    y = np.hstack((y1,y2))
+    y = to_categorical(y, dtype="uint8")
+
+    # Shuffle the file names and labels
+    x_shuffled, y_shuffled = shuffle(x_names, y)
+
+    # Create a new directory to store the file names and labels
+    outdir = directory + '_names'
+    os.makedirs(outdir, exist_ok=True)
+    
+    # Split the shuffled file names and labels into training and validation sets
+    X_train_filenames, X_val_filenames, y_train, y_val = train_test_split(x_shuffled, y_shuffled, test_size=0.3, random_state=1)
+
+    
+    # Save the training set file names and labels to disk
+    name_x_t = outdir + '/train_list.npy'
+    np.save(name_x_t, X_train_filenames)
+
+    name_x_v = outdir + '/val_list.npy'
+    np.save(name_x_v, X_val_filenames)
+
+    # Save the validation set file names and labels to disk
+    name_y_t = outdir + '/train_labels.npy'
+    np.save(name_y_t, y_train)
+
+    name_y_v = outdir + '/val_labels.npy'
+    np.save(name_y_v, y_val)
+
+
+def test_set(directory='data/samples'):
+    """
+    Creates test sets for signal and noise files on each distance and stores them in a directory
     :param directory: directory containing the signal and noise files
     """
     
@@ -313,15 +423,21 @@ def name_store(directory='data/samples'):
     # model = ['LS220', 'GShen', 'SFHo']
     
     # Loop through each distance value
-    for i in range(len(dist)):
+    for dist_ in dist:
         # Find all signal files for the current distance value
         # signal_names = glob.glob(directory +'/s*--LS220_'+ dist[i] +'kpc_sim*.txt')
-        signal_names = glob.glob(directory +'/s*--*_'+ dist[i] +'kpc_sim*.txt')
-
+        signal_names1 = glob.glob(directory +'/s*--LS220_'+ dist_ +'kpc_sim*.txt')
+        signal_names2 = glob.glob(directory +'/s*--GShen_'+ dist_ +'kpc_sim*_2seg.txt')
+        signal_names3 = glob.glob(directory +'/s*--SFHo_'+ dist_ +'kpc_sim*_2seg.txt')
+        signal_names = signal_names1 + signal_names2 + signal_names3
         
         # Find all noise files, this could be done once
         noise_names = glob.glob(directory+'/aLIGO_noise_2sec_sim*.txt')
-
+    
+        print('signals found ',len(signal_names))
+        print('noise found ',len(noise_names))
+    
+    
         # If the number of noise files is not equal to the number of signal files,
         # split the larger set to match the size of the smaller set
         if len(noise_names) != len(signal_names):
@@ -331,44 +447,69 @@ def name_store(directory='data/samples'):
             else:
                 signal_names, n = train_test_split(
                     signal_names, train_size=len(noise_names))
-
+    
         # Create arrays for the labels of the signal and noise files
         y1 = np.zeros(len(signal_names))
         y2 = np.ones(len(noise_names))
-
+    
         # Concatenate the arrays of signal and noise file names
         x_names = signal_names + noise_names
-
+    
         # Convert labels to categorical format
         y = np.hstack((y1,y2))
         y = to_categorical(y, dtype="uint8")
-
+    
         # Shuffle the file names and labels
         x_shuffled, y_shuffled = shuffle(x_names, y)
-
+    
         # Create a new directory to store the file names and labels
         outdir = directory + '_names'
         os.makedirs(outdir, exist_ok=True)
         
         # Split the shuffled file names and labels into training and validation sets
-        X_train_filenames, X_val_filenames, y_train, y_val = train_test_split(x_shuffled, y_shuffled, test_size=0.3, random_state=1)
-
+        # X_train_filenames, X_val_filenames, y_train, y_val = train_test_split(x_shuffled, y_shuffled, test_size=0.3, random_state=1)
+    
         
         # Save the training set file names and labels to disk
-        name_x_t = outdir + '/train_list_dist_' + dist[i] + '.npy'
-        np.save(name_x_t, X_train_filenames)
-
-        name_x_v = outdir + '/val_list_dist_' + dist[i] + '.npy'
-        np.save(name_x_v, X_val_filenames)
-
+        # name_x_t = outdir + '/train_list.npy'
+        # np.save(name_x_t, X_train_filenames)
+    
+        name_x_v = outdir + '/test_list_dist_'+dist_+'.npy'
+        np.save(name_x_v, x_shuffled)
+    
         # Save the validation set file names and labels to disk
-        name_y_t = outdir + '/train_labels_dist_' + dist[i] + '.npy'
-        np.save(name_y_t, y_train)
-
-        name_y_v = outdir + '/val_labels_dist_' + dist[i] + '.npy'
-        np.save(name_y_v, y_val)
+        # name_y_t = outdir + '/train_labels.npy'
+        # np.save(name_y_t, y_train)
+    
+        name_y_v = outdir + '/test_labels_dist_'+dist_+'.npy'
+        np.save(name_y_v, y_shuffled)
 
 #name_store()
+
+def noisehowmuch(directory='data/samples'):
+    
+    noise_names = glob.glob(directory+'/aLIGO_noise_2sec_sim*.txt')
+    print(len(noise_names))
+    
+def siglen(directory='/home/desktop-20223/Escritorio/Lucas/simulaciones/SimGW'):
+    
+    noise_names = glob.glob(directory+'/aLIGO_noise_2sec_sim*.txt')
+
+
+    for n in noise_names:
+    	a = np.loadtxt(fname = str(n), delimiter=' ', usecols=1)
+    	if len(a) < 20000:
+    		print( len(a))
+    noise_names=[]
+
+    signal_names = glob.glob(directory +'/s*--*_'+ '10' +'kpc_sim*.txt')
+    for n in signal_names:
+    	a = np.loadtxt(fname = str(n), delimiter=' ', usecols=1)
+    	if len(a) < 20000:
+    		print(n)
+    		print( len(a))
+    signal_names=[]
+
 def transform_data(batch_x , trns_indx, fmax = 2048):
     """
     Apply a specified transform function to a batch of data files
@@ -443,10 +584,7 @@ def transform_data_stft_3(batch_x , fmax = 2048, trns_indx = 0):
         for i in range(len(windL)):
             x_a = [abs(trns_funct[trns_indx](
                 t ,graph = False, fmax = fmax, window_length = windL[i]))
-                if  t.shape == (16384,) 
-                else
-                abs(trns_funct[trns_indx](
-                    t[::2] ,graph = False, fmax = fmax, window_length = windL[i]))
+                
                 for t in x_transform]
             x_a = norm_data(np.array(x_a))
             x.append(x_a)
@@ -454,10 +592,7 @@ def transform_data_stft_3(batch_x , fmax = 2048, trns_indx = 0):
         for i in range(len(n_fft)):
             x_a = [abs(trns_funct[1](
                 t ,graph = False, fmax = fmax,n_fft = n_fft[i], hop_length = hop_length[i], n_mels = n_mels[i]))
-                if  t.shape == (16384,) 
-                else
-                abs(trns_funct[1](
-                    t[::2] ,graph = False, fmax = fmax,n_fft = n_fft[i], hop_length = hop_length[i], n_mels = n_mels[i]))
+                
                 for t in x_transform]
             x_a = norm_data(np.array(x_a))
         
@@ -467,6 +602,7 @@ def transform_data_stft_3(batch_x , fmax = 2048, trns_indx = 0):
     return x
 
 
+    
 
 class My_Custom_Generator(keras.utils.Sequence):
     """
@@ -500,3 +636,5 @@ class My_Custom_Generator(keras.utils.Sequence):
         return x , np.array(batch_y)
 
 
+if __name__ == '__main__':
+    globals()[sys.argv[1]]()

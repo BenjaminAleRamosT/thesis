@@ -482,12 +482,18 @@ def main():
     data3 = np.loadtxt(f3, delimiter=" ")[:, 1]
     # plt.figure(figsize=(16,9))
     # plt.plot(data)
-
-    # calcular_stft(data,graph=True,fmax=2048)
+    windL = [512, 1024, 2048]
+    print(calcular_stft(data3,graph=True,fmax=2048,window_length = windL[0]).shape,
+    calcular_stft(data3,graph=True,fmax=2048,window_length = windL[1]).shape,
+    calcular_stft(data3,graph=True,fmax=2048,window_length = windL[2]).shape)
     # dwt_pywt(data,graph=True,fmax=2048)
-    mel(data1,graph=True)
-    mel(data2,graph=True)
-    mel(data3,graph=True)
+    n_fft = [512, 1024, 2048]
+    hop_length = [32, 64, 256]
+    n_mels = [20, 40, 160]
+    
+    print(mel(data3,graph=True,fmax=2048,n_fft = n_fft[0], hop_length = hop_length[0], n_mels = n_mels[0]).shape,
+    mel(data3,graph=True,fmax=2048,n_fft = n_fft[1], hop_length = hop_length[1], n_mels = n_mels[1]).shape,
+    mel(data3,graph=True,fmax=2048,n_fft = n_fft[2], hop_length = hop_length[2], n_mels = n_mels[2]).shape)
     # wt_morlet(data,graph=True,fmax=2048)
     # calcular_cwt(data,graph=True,fmax=2048)
     # e = ewt(data,graph = True)[:,3]
