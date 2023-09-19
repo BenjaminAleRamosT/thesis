@@ -14,4 +14,5 @@ propuesta6 uses 3 representations of Melspectrograms
 in test_CNN.py you need to change 
 
 new_model = path of model to test
+
 trns_indx = 0 for STFT, 5 for melspectrograms
